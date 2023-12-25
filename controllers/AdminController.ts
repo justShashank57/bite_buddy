@@ -3,10 +3,18 @@ import { createVendorInput } from "../DTO";
 import { vendor } from "../model";
 import { generatePassword, generateSalt } from "../utility";
 
+export const findVendor =async (vendorId:string | undefined, email?:string) => {
+       if(email){
+            return await vendor.find({email:email});
+       }
+       else{
+            return  await vendor.findById(vendorId);
+       }
+}
 export const CreateVendor = async(req:Request,res:Response,next:NextFunction) =>{
       const {name,ownerName,address,phone,password,email,foodType,pincode} = <createVendorInput>req.body;
       
-      const existingVendor = await vendor.findOne({email:email});
+      const existingVendor = await findVendor(email);
       if(existingVendor){
             return res.json({"message":"Vendor Already Exists"});
       }
@@ -31,9 +39,23 @@ export const CreateVendor = async(req:Request,res:Response,next:NextFunction) =>
 }
 
 export const getVendors = async(req:Request,res:Response,next:NextFunction) =>{
+       const vendors = await vendor.find();
+       if(vendors){
+            res.json({vendors});
+       }
+       else{
+            res.json({"messgage":"No Vendors Found."});
+       }
 
 }
 
 export const getVendorById = async(req:Request,res:Response,next:NextFunction) =>{
-
+       const vendorId = req.params.id;
+       const foundVendor = await findVendor(vendorId);
+       if(foundVendor){
+            res.json({foundVendor});
+       }
+       else{
+            res.json({"message":"Vendor data not available."});
+       }
 }

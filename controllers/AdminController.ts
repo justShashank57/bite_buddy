@@ -5,7 +5,7 @@ import { generatePassword, generateSalt } from "../utility";
 
 export const findVendor =async (vendorId:string | undefined, email?:string) => {
        if(email){
-            return await vendor.find({email:email});
+            return await vendor.findOne({email:email});
        }
        else{
             return  await vendor.findById(vendorId);

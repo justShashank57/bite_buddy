@@ -13,6 +13,7 @@ export const findVendor = async (vendorId:string | undefined, email?:string) => 
             return  await vendor.findById(vendorId);
        }
 }
+
 export const CreateVendor = async(req:Request,res:Response,next:NextFunction) =>{
       try{
            const {name,ownerName,address,phone,password,email,foodType,pincode} = <createVendorInput>req.body;
@@ -42,7 +43,7 @@ export const CreateVendor = async(req:Request,res:Response,next:NextFunction) =>
               return res.json(createdVendor);
           }
      catch(err){
-          console.log("ERROR FOUND.");
+          console.log("ERROR FOUND in createVendor.");
           return res.json(err);
      }
 }

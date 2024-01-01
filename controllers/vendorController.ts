@@ -65,6 +65,31 @@ export const updateVendorProfile = async (req:Request,res:Response,next:NextFunc
            }
 }
 
+export const updateVendorCoverImage =async (req:Request,res:Response,next:NextFunction) => {
+   try{
+      const user = req.user;
+      if(user){
+          const existingUser = await findVendor(user.__id);
+          if(existingUser){
+             const files = req.files as [Express.Multer.File];
+            //  console.log("Files: ",files);
+
+             const images = files.map((file:Express.Multer.File)=> file.filename);
+            //  console.log("images: ",images);
+
+             existingUser.coverImages.push(...images);
+             const savedResult = await existingUser.save();
+
+             return res.json(savedResult);
+          }
+      }
+      return res.json({"message":"something went wrong with Profile photo."});
+   }
+   catch(err){
+        console.log("Error found in UpdateCoverImage function: ",err);
+        return res.json(err);
+   }
+}
 export const updateVendorservice = async (req:Request,res:Response,next:NextFunction) => {
              const userFromReq = req.user;
              if(userFromReq){
@@ -82,28 +107,40 @@ export const updateVendorservice = async (req:Request,res:Response,next:NextFunc
 
 
 export const addFood = async (req:Request,res:Response,next:NextFunction) => {
-       const user = req.user;
-       if(user){
-           const {name,description,category,foodType,readyTime,price} = <createFoodInputs>req.body;
-           const existingUser = await findVendor(user.__id);
-           if(existingUser){
-              const createdFood = await food.create({
-                  vendorId:existingUser._id,
-                  name:name,
-                  description:description,
-                  category:category,
-                  foodType:foodType,
-                  images:[''],
-                  readyTime:readyTime,
-                  price:price
-              })
-              existingUser.foods.push(createdFood);
-              const savedResult = await existingUser.save();
- 
-              return res.json(savedResult);
-           }
+       try{
+          const user = req.user;
+          if(user){
+              const {name,description,category,foodType,readyTime,price} = <createFoodInputs>req.body;
+              const existingUser = await findVendor(user.__id);
+              if(existingUser){
+                 const files = req.files as [Express.Multer.File];
+                 console.log("Files: ",files);
+
+                 const images = files.map((file:Express.Multer.File)=> file.filename);
+                 console.log("images: ",images);
+
+                 const createdFood = await food.create({
+                     vendorId:existingUser._id,
+                     name:name,
+                     description:description,
+                     category:category,
+                     foodType:foodType,
+                     images:images,
+                     readyTime:readyTime,
+                     price:price
+                 })
+                 existingUser.foods.push(createdFood);
+                 const savedResult = await existingUser.save();
+    
+                 return res.json(savedResult);
+              }
+          }
+          return res.json({"message":"something went wrong with add food."});
        }
-       return res.json({"message":"something went wrong with add food."});
+       catch(err){
+            console.log("Error found in addFood function: ",err);
+            return res.json(err);
+       }
 }
 
 

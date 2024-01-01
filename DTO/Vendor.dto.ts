@@ -7,7 +7,7 @@ export interface createVendorInput{
     phone:string;
     email:string;
     password:string;
-    salt:string
+    salt:string;
 }
 
 export interface EditVendorInputs{

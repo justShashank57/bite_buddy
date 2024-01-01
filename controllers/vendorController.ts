@@ -1,7 +1,8 @@
 import {Request,Response,NextFunction} from 'express';
-import { EditVendorInputs, vendorLoginInputs } from '../DTO';
+import { EditVendorInputs, createFoodInputs, vendorLoginInputs } from '../DTO';
 import { findVendor } from './AdminController';
 import { generateSignature, validatePassword } from '../utility';
+import { food, vendor } from '../model';
 
 const maxAge = 3*24*60*60;
 export const vendorLogin =async (req:Request,res:Response,next:NextFunction) => {
@@ -79,6 +80,46 @@ export const updateVendorservice = async (req:Request,res:Response,next:NextFunc
              }
 }
 
+
+export const addFood = async (req:Request,res:Response,next:NextFunction) => {
+       const user = req.user;
+       if(user){
+           const {name,description,category,foodType,readyTime,price} = <createFoodInputs>req.body;
+           const existingUser = await findVendor(user.__id);
+           if(existingUser){
+              const createdFood = await food.create({
+                  vendorId:existingUser._id,
+                  name:name,
+                  description:description,
+                  category:category,
+                  foodType:foodType,
+                  images:[''],
+                  readyTime:readyTime,
+                  price:price
+              })
+              existingUser.foods.push(createdFood);
+              const savedResult = await existingUser.save();
+ 
+              return res.json(savedResult);
+           }
+       }
+       return res.json({"message":"something went wrong with add food."});
+}
+
+
+// search for foods with respect to vendor
+export const getFoods = async (req:Request,res:Response,next:NextFunction) => {
+             const user = req.user;
+             if(user){
+                const foods = await food.find({vendorId:user.__id});
+                if(foods){
+                   return res.json(foods);
+                }
+                else{
+                   return res.json({"message":"No food item added."});
+                }
+             }
+}
 export const vendorLogout =async (req:Request,res:Response) => {
        res.cookie('jwt','',{maxAge:1});
        res.redirect('/');

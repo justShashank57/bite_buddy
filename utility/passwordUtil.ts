@@ -8,6 +8,7 @@ export const generateSalt = async ()=>{
        return await bcrypt.genSalt();
 }
 export const generatePassword = async (password:string,salt:string) => {
+       // console.log("GENERATE PASSWORD CALLED !!!!")
        return await bcrypt.hash(password,salt);
 }
 

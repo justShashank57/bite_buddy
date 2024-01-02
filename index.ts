@@ -1,28 +1,15 @@
-import express from "express";
-import { AdminRoute,VendorRoute } from "./routes";
-import mongoose from "mongoose";
-import { MONGODB_URL } from "./config";
-import cookieParser from "cookie-parser";
-import { checkUserExistence } from "./middlewares";
-import path from 'path';
+import express from 'express';
+import App from './services/expressApp';
+import connectDB from './services/database';
 
-const app = express();
+const startServer = async() => {
+      const app = express();
+      await connectDB();
+      await App(app);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use('/images',express.static(path.join(__dirname,'./images')));
-// to provide 'user' local variable to the req-res cycle
-app.use(checkUserExistence);
-app.use('/admin',AdminRoute);
-app.use('/vendor',VendorRoute);
+      app.listen(8000,()=>{
+          console.log("Listening to port : 8000");
+      })
+}
 
-mongoose.connect(MONGODB_URL).then(result=>{
-   console.log("DB CONNECTED !");
-}).catch(err=> console.log("ERROR: ",err))
-app.get('/',(req,res)=>{
-    res.json('Hello from backend, you have requested for HomePage.')
-})
-app.listen(8000,()=>{
-    console.log("Listening to Port : 8000");
-})
+startServer();

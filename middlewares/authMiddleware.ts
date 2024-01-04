@@ -13,7 +13,7 @@ export const requireAuth = (req:Request,res:Response,next:NextFunction) =>{
                  }
                  else{
                      req.user = decodedToken;
-                     console.log("Req.user or Decoded token in RequireAuth function: ",decodedToken);
+                     console.log("Decoded token in RequireAuth function: ",decodedToken);
                      return next();
                  }
           })

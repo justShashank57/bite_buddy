@@ -1,5 +1,5 @@
 import {Request,Response,NextFunction} from 'express';
-import { EditVendorInputs, createFoodInputs, vendorLoginInputs } from '../DTO';
+import { EditVendorInputs, createFoodInputs, vendorLoginInputs, vendorPayloadInputs } from '../DTO';
 import { findVendor } from './AdminController';
 import { generateSignature, validatePassword } from '../utility';
 import { food, vendor } from '../model';
@@ -18,7 +18,7 @@ export const vendorLogin =async (req:Request,res:Response,next:NextFunction) => 
                   name:existingVendor.name
                })
                res.cookie('jwt',signature,{httpOnly:true,maxAge:maxAge*1000});
-               console.log("Authorization successful");
+               console.log("Created JWT Cookie");
                return res.status(201).json({"vendorId":existingVendor.id});
             }
             else{
@@ -33,7 +33,7 @@ export const vendorLogin =async (req:Request,res:Response,next:NextFunction) => 
 // authorization required
 
 export const getVendorProfile = async (req:Request,res:Response,next:NextFunction) => {
-             const user = req.user;
+             const user = req.user as vendorPayloadInputs;
              if(user){
                      const existingVendor = await findVendor(user.__id);
                      return res.status(201).json(existingVendor);
@@ -44,7 +44,7 @@ export const getVendorProfile = async (req:Request,res:Response,next:NextFunctio
 }
 
 export const updateVendorProfile = async (req:Request,res:Response,next:NextFunction) => {
-           const userFromReq = req.user;
+           const userFromReq = req.user as vendorPayloadInputs;
            const {name,email,foodType,phone} = <EditVendorInputs>req.body;
            if(userFromReq){
                 const existingVendor = await findVendor(userFromReq.__id);
@@ -67,7 +67,7 @@ export const updateVendorProfile = async (req:Request,res:Response,next:NextFunc
 
 export const updateVendorCoverImage =async (req:Request,res:Response,next:NextFunction) => {
    try{
-      const user = req.user;
+      const user = req.user as vendorPayloadInputs;
       if(user){
           const existingUser = await findVendor(user.__id);
           if(existingUser){
@@ -91,7 +91,7 @@ export const updateVendorCoverImage =async (req:Request,res:Response,next:NextFu
    }
 }
 export const updateVendorservice = async (req:Request,res:Response,next:NextFunction) => {
-             const userFromReq = req.user;
+             const userFromReq = req.user as vendorPayloadInputs;
              if(userFromReq){
                 const existingVendor = await findVendor(userFromReq.__id);
                 if(existingVendor){
@@ -108,7 +108,7 @@ export const updateVendorservice = async (req:Request,res:Response,next:NextFunc
 
 export const addFood = async (req:Request,res:Response,next:NextFunction) => {
        try{
-          const user = req.user;
+          const user = req.user as vendorPayloadInputs;
           if(user){
               const {name,description,category,foodType,readyTime,price} = <createFoodInputs>req.body;
               const existingUser = await findVendor(user.__id);
@@ -146,7 +146,7 @@ export const addFood = async (req:Request,res:Response,next:NextFunction) => {
 
 // search for foods with respect to vendor
 export const getFoods = async (req:Request,res:Response,next:NextFunction) => {
-             const user = req.user;
+             const user = req.user as vendorPayloadInputs;
              if(user){
                 const foods = await food.find({vendorId:user.__id});
                 if(foods){

@@ -35,8 +35,8 @@ export const vendorLogin =async (req:Request,res:Response,next:NextFunction) => 
 export const getVendorProfile = async (req:Request,res:Response,next:NextFunction) => {
              const user = req.user as vendorPayloadInputs;
              if(user){
-                     const existingVendor = await findVendor(user.__id);
-                     return res.status(201).json(existingVendor);
+                  const existingVendor = await findVendor(user.__id);
+                  return res.status(201).json(existingVendor);
              }
              else{
                   return res.json({"message":"Vendor information not found."});

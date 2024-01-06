@@ -1,9 +1,11 @@
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import express,{Request,Response,NextFunction} from 'express';
-import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs } from '../DTO';
+import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs, orderInputs } from '../DTO';
 import { generateOtp, generatePassword, generateSalt, generateSignature, onRequestOtp, validatePassword } from '../utility';
 import { customer } from '../model/customer';
+import { food } from '../model';
+import { Order } from '../model/order';
 
 
 const maxAge = 3*24*60*60;
@@ -34,7 +36,8 @@ export const customerSignup = async (req:Request,res:Response,next:NextFunction)
              address:'',
              verified:false,
              lat:0,
-             lng:0
+             lng:0,
+             orders:[]
        })
        if(result){
             //  send otp to customer
@@ -162,4 +165,76 @@ export const editCustomerProfile = async (req:Request,res:Response,next:NextFunc
               return res.status(200).json(profile);
            }
        }
+}
+
+export const createOrder = async (req:Request,res:Response,next:NextFunction)=>{
+    //    grab current customer
+          const Customer = req.user as customerPayload;
+        //   console.log("create order called.")
+          if(Customer){
+              //    create an order Id
+              const orderId = `${Math.floor(Math.random()*89999)+1000}`;
+
+              const profile = await customer.findById(Customer._id);
+              
+              // grab order items for request [{id:XX,unit:XX}]
+              const cart = <[orderInputs]>req.body; //[{id:XX,unit:XX}] -- this cart comes
+              let cartItems = Array(); // this cart goes to user after calculations
+              let netAmount = 0.0;
+          
+              // calculate order amount
+              const foods = await food.find().where('_id').in(cart.map(item=>item._id)).exec();
+              foods.map(Food=>{
+                cart.map(({_id,unit})=>{
+                        if(Food._id == _id){
+                            netAmount += (Food.price * unit);
+                            cartItems.push({food:Food.toObject(),unit});
+                        }
+                })
+              })
+          
+              // create order with order description
+              if(cartItems){
+                //  create order
+                const currentOrder = await Order.create({
+                      orderId:orderId,
+                      items:cartItems,
+                      totalAmount:netAmount,
+                      orderDate: new Date(),
+                      paidThrough:'COD',
+                      paymentResponse:'',
+                      orderStatus:'waiting'
+                })
+                if(currentOrder){
+                    profile.orders.push(currentOrder);
+                    await profile.save();
+                    return res.status(200).json(currentOrder);
+                }
+              }
+          
+              // finally update orders to user account
+             
+          }
+          return res.status(400).json({message:"Error with creating order."}); 
+      
+}
+
+export const getOrders = async (req:Request,res:Response,next:NextFunction)=>{
+             const Customer = req.user as customerPayload;
+             if(Customer){
+                const profile = await customer.findById(Customer._id).populate("orders");
+                if(profile){
+                    return res.status(200).json(profile.orders);
+                }
+             }
+             return res.status(400).json({message:"Error while fetching Orders."});
+}
+
+export const getOrderById = async (req:Request,res:Response,next:NextFunction)=>{
+             const orderId = req.params.id;
+             if(orderId){
+                const order = await Order.findById(orderId).populate('items.food');
+                return res.status(200).json(order);
+             }
+             return res.status(400).json({message:"Error while fetching your Order."});
 }

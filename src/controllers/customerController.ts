@@ -6,6 +6,7 @@ import { generateOtp, generatePassword, generateSalt, generateSignature, onReque
 import { customer } from '../model/customer';
 import { food } from '../model';
 import { Order } from '../model/order';
+import e from 'express';
 
 
 const maxAge = 3*24*60*60;
@@ -166,6 +167,77 @@ export const editCustomerProfile = async (req:Request,res:Response,next:NextFunc
            }
        }
 }
+// cart
+export const addToCart= async(req:Request,res:Response,next:NextFunction) =>{
+       const Customer = req.user as customerPayload;
+       if(Customer){
+          const profile = await customer.findById(Customer._id).populate('cart.food');
+          let cartItems = Array();
+          const {_id,unit} = <orderInputs>req.body;
+          const Food = await food.findById(_id);
+          if(Food){
+            if(profile){
+                cartItems = profile.cart;
+                if(cartItems.length>0){
+                    let existingFood = cartItems.filter((item)=>item.food._id.toString()===_id);
+                    if(existingFood.length>0){
+                         const index = cartItems.indexOf(existingFood[0]);
+                         if(unit>0){
+                            cartItems[index] = {food:Food.toObject(),unit:unit};
+                         }
+                         else{
+                            cartItems.splice(index,1);
+                         }
+                    }else{
+                        cartItems.push({food:Food.toObject(),unit:unit});
+                    }
+                }
+                else{
+                    cartItems.push({food:Food.toObject(),unit:unit});
+                }
+                
+                if(cartItems){
+                    profile.cart = cartItems as any;
+                    const cartResult = await profile.save();
+                    return res.status(200).json(cartResult.cart);
+                }
+            }
+
+          }
+
+       }
+}
+
+export const getCart= async(req:Request,res:Response,next:NextFunction) =>{
+       const Customer = req.user as customerPayload;
+       if(Customer){
+         const profile = await customer.findById(Customer._id).populate("cart.food");
+         if(profile){
+              const cart = profile.cart;
+              if(cart.length>0){
+                 return res.status(200).json(cart);
+              }else{
+                return res.status(200).json({message:"Cart is empty."});
+              }
+         }
+       }
+       return res.status(400).json({message:"Error while Fetching cart."});
+}
+
+export const deleteCart= async(req:Request,res:Response,next:NextFunction) =>{
+    const Customer = req.user as customerPayload;
+    if(Customer){
+      const profile = await customer.findById(Customer._id);
+      if(profile){
+           profile.cart = [] as any;
+           const cartResult = await profile.save();
+           return res.status(200).json(cartResult);
+      }
+    }
+    return res.status(400).json({message:"Cart is empty."});
+}
+
+// order
 
 export const createOrder = async (req:Request,res:Response,next:NextFunction)=>{
     //    grab current customer

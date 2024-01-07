@@ -8,7 +8,7 @@ export default async (app:Application) => {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser());
-    app.use('/images',express.static(path.join(__dirname,'./images')));
+    app.use('/images',express.static(path.join(__dirname,'../images')));
     // to provide 'user' local variable to the req-res cycle
     app.use(checkUserExistence);
 

@@ -1,5 +1,5 @@
 import express,{Request,Response,NextFunction, Router} from "express";
-import { addFood, getCurrentOrders, getFoods, getOrderDetails, getVendorProfile, processOrder, updateVendorCoverImage, updateVendorProfile, updateVendorservice, vendorLogin, vendorLogout } from "../controllers";
+import { addFood, addOffer, editOffer, getCurrentOrders, getFoods, getOffers, getOrderDetails, getVendorProfile, processOrder, updateVendorCoverImage, updateVendorProfile, updateVendorservice, vendorLogin, vendorLogout } from "../controllers";
 import { requireAuth } from "../middlewares";
 import multer from 'multer';
 
@@ -34,6 +34,12 @@ router.get('/foods',getFoods);
 router.get('/orders',getCurrentOrders);
 router.put('/order/:id/process',processOrder);
 router.get('/order/:id',getOrderDetails);
+
+// offers
+
+router.get('/offers',getOffers);
+router.post('/offer',addOffer);
+router.put('/offer/:id',editOffer)
 
 router.get('/',(req:Request,res:Response,next:NextFunction)=>{
       res.json({message:"Hello From Vendor"});

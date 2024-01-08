@@ -27,3 +27,20 @@ export interface vendorPayloadInputs{
        name:string;
        foodType:[string];
 }
+
+export interface createOfferInputs{
+       offerType:string; //VENDOR  // GENERIC
+       vendors:[any];  //vendorId
+       title:string;   //INR 200 off on week days
+       description:string;
+       minValue:number; //minimum amount
+       offerAmount:number;
+       startValidity:Date; 
+       endValidity:Date;
+       promocode:string; //WEEK200
+       promotype:string; //USER // BANK // CARD //ALL
+       bank:[any];
+       bins:[any];
+       pincode:string;
+       isActive:boolean; 
+}

@@ -1,9 +1,10 @@
 import {Request,Response,NextFunction} from 'express';
-import { EditVendorInputs, createFoodInputs, vendorLoginInputs, vendorPayloadInputs } from '../DTO';
+import { EditVendorInputs, createFoodInputs, createOfferInputs, vendorLoginInputs, vendorPayloadInputs } from '../DTO';
 import { findVendor } from './AdminController';
 import { generateSignature, validatePassword } from '../utility';
-import { food, vendor } from '../model';
+import { food, vendor} from '../model';
 import { Order } from '../model/order';
+import { Offer } from '../model/offer';
 
 const maxAge = 3*24*60*60;
 export const vendorLogin =async (req:Request,res:Response,next:NextFunction) => {
@@ -203,4 +204,90 @@ export const processOrder =async (req:Request,res:Response,next:NextFunction) =>
           }
        }
        return res.status(400).json({message:"Unable to Process Order."});
+}
+
+// offers
+
+export const getOffers = async (req:Request,res:Response,next:NextFunction)=>{
+       const user = req.user as vendorPayloadInputs;
+       if(user){
+          let currentOffers = Array();
+          const offers = await Offer.find().populate('vendors');
+          if(offers){
+             offers.map((item)=>{
+                if(item.vendors){
+                   item.vendors.map(Vendor=>{
+                       if(Vendor.id.toString()===user.__id){
+                          currentOffers.push(item);
+                       }
+                   })
+                }
+                if(item.offerType==="GENERIC"){
+                   currentOffers.push(item);
+                }
+             })
+            }
+            return res.status(200).json(currentOffers);      
+       }
+       return res.status(400).json({message:"Offers not found."});
+}
+
+export const addOffer = async (req:Request,res:Response,next:NextFunction)=>{
+       const user = req.user as vendorPayloadInputs;
+       if(user){
+           const {title,description,offerType,offerAmount,pincode,promocode,promotype,startValidity,endValidity,bank,bins,minValue,isActive} = <createOfferInputs>req.body;
+           const Vendor = await vendor.findById(user.__id);
+           if(Vendor){
+             const offer = await Offer.create({
+               title,
+               description,
+               offerType,
+               offerAmount,
+               pincode,
+               promocode,
+               promotype,
+               startValidity,
+               endValidity,
+               bank,
+               bins,
+               minValue,
+               isActive,
+               vendors: [Vendor]
+             });
+             if(offer){
+                return res.status(200).json(offer);
+             }
+           }
+       }
+       return res.status(400).json({message:"Unable to Create offer."});
+}
+
+export const editOffer = async (req:Request,res:Response,next:NextFunction)=>{
+       const user = req.user as vendorPayloadInputs;
+       const offerId = req.params.id;
+       if(user){
+          const {title,description,offerType,offerAmount,pincode,promocode,promotype,startValidity,endValidity,bank,bins,minValue,isActive} = <createOfferInputs>req.body;
+          const currentOffer = await Offer.findById(offerId);
+          if(currentOffer){
+              const Vendor = await vendor.findById(user.__id);
+              if(Vendor){
+                    currentOffer.title = title;
+                    currentOffer.description = description;
+                    currentOffer.offerType = offerType;
+                    currentOffer.offerAmount = offerAmount;
+                    currentOffer.pincode = pincode;
+                    currentOffer.promocode = promocode;
+                    currentOffer.promotype = promotype;
+                    currentOffer.startValidity = startValidity;
+                    currentOffer.endValidity = endValidity;
+                    currentOffer.bank = bank;
+                    currentOffer.bins = bins;
+                    currentOffer.minValue = minValue;
+                    currentOffer.isActive = isActive;
+
+                    const result = await currentOffer.save();
+                    return res.status(200).json(result);
+             }
+          }
+       }
 }

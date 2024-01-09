@@ -39,7 +39,7 @@ router.get('/order/:id',getOrderDetails);
 
 router.get('/offers',getOffers);
 router.post('/offer',addOffer);
-router.put('/offer/:id',editOffer)
+router.put('/offer/:id',editOffer);
 
 router.get('/',(req:Request,res:Response,next:NextFunction)=>{
       res.json({message:"Hello From Vendor"});

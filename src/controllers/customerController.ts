@@ -1,12 +1,12 @@
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import express,{Request,Response,NextFunction} from 'express';
-import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs, orderInputs } from '../DTO';
+import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs, orderInputs, cartItem } from '../DTO';
 import { generateOtp, generatePassword, generateSalt, generateSignature, onRequestOtp, validatePassword } from '../utility';
 import { customer } from '../model/customer';
-import { food } from '../model';
+import { Transaction, food } from '../model';
 import { Order } from '../model/order';
-import e from 'express';
+import { Offer } from '../model/offer';
 
 
 const maxAge = 3*24*60*60;
@@ -173,7 +173,7 @@ export const addToCart= async(req:Request,res:Response,next:NextFunction) =>{
        if(Customer){
           const profile = await customer.findById(Customer._id).populate('cart.food');
           let cartItems = Array();
-          const {_id,unit} = <orderInputs>req.body;
+          const {_id,unit} = <cartItem>req.body;
           const Food = await food.findById(_id);
           if(Food){
             if(profile){
@@ -237,27 +237,79 @@ export const deleteCart= async(req:Request,res:Response,next:NextFunction) =>{
     return res.status(400).json({message:"Cart is empty."});
 }
 
+// -------------------------create payment--------------------
+
+export const createPayment =async (req:Request,res:Response,next:NextFunction) => {
+    const user = req.user as customerPayload;
+    const {amount,paymentMode,offerId} = req.body;
+    let payableAmount = amount;
+    if(offerId){
+       const appliedOffer = await Offer.findById(offerId);
+       if(appliedOffer){
+          if(appliedOffer.isActive){
+              payableAmount = (payableAmount - appliedOffer.offerAmount);
+          }
+       }
+    }
+ // Perform payement gateway charge API call
+
+ // right after payment gateway success / failure
+
+ // create record on transaction
+  const transaction = await Transaction.create({
+        customer:user._id,
+        vendorId:'',
+        orderId:'',
+        orderValue:payableAmount,
+        offerUsed:offerId || 'NA',
+        status:'OPEN', //     FAILED // SUCCESS
+        paymentMode:paymentMode,
+        paymentResponse:`Payment is ${paymentMode}`
+  })
+ // return transactionID 
+ if(transaction){
+     return res.status(200).json(transaction);
+ }
+}
+
+
 // order
+
+export const validateTransaction = async (txnId:string) => {
+       const currentTransaction = await Transaction.findById(txnId);
+       if(currentTransaction){
+          if(currentTransaction.status.toLowerCase() !== "failed"){
+             return {status:true,currentTransaction};
+          }
+       }
+       return {status:false,currentTransaction};
+}
 
 export const createOrder = async (req:Request,res:Response,next:NextFunction)=>{
     //    grab current customer
           const Customer = req.user as customerPayload;
+          const {txnId,amount,items} = <orderInputs>req.body;
         //   console.log("create order called.")
           if(Customer){
+              //validate transaction
+              const {status,currentTransaction}  = await validateTransaction(txnId);
+              if(!status){
+                return res.status(400).json({message:"Error with Create Order."});
+              } 
+
               //    create an order Id
               const orderId = `${Math.floor(Math.random()*89999)+1000}`;
 
               const profile = await customer.findById(Customer._id);
               
               // grab order items for request [{id:XX,unit:XX}]
-              const cart = <[orderInputs]>req.body; //[{id:XX,unit:XX}] -- this cart comes
               let cartItems = Array(); // this cart goes to user after calculations
               let netAmount = 0.0;
               let vendorId;
               // calculate order amount
-              const foods = await food.find().where('_id').in(cart.map(item=>item._id)).exec();
+              const foods = await food.find().where('_id').in(items.map(item=>item._id)).exec();
               foods.map(Food=>{
-                cart.map(({_id,unit})=>{
+                items.map(({_id,unit})=>{
                         if(Food._id == _id){
                             vendorId = Food.vendorId;
                             netAmount += (Food.price * unit);
@@ -274,17 +326,20 @@ export const createOrder = async (req:Request,res:Response,next:NextFunction)=>{
                       vendorId:vendorId,
                       items:cartItems,
                       totalAmount:netAmount,
+                      paidAmount:amount,
                       orderDate: new Date(),
-                      paidThrough:'COD',
-                      paymentResponse:'',
                       orderStatus:'waiting',
-                      appliedOffers:false,
-                      offerId:null,
                       readyTime:45
                 })
                 if(currentOrder){
                     profile.cart = [] as any;
                     profile.orders.push(currentOrder);
+                    currentTransaction.vendorId = vendorId;
+                    currentTransaction.orderId = orderId;
+                    currentTransaction.status = 'CONFIRMED';
+
+                    await currentTransaction.save()
+
                     await profile.save();
                     return res.status(200).json(currentOrder);
                 }
@@ -316,3 +371,24 @@ export const getOrderById = async (req:Request,res:Response,next:NextFunction)=>
              }
              return res.status(400).json({message:"Error while fetching your Order."});
 }
+
+// Offers
+
+export const verifyOffer = async (req:Request,res:Response,next:NextFunction) =>{
+             const user = req.user as customerPayload;
+             const offerId = req.params.id;
+             if(offerId){
+                const appliedOffer = await Offer.findById(offerId);
+                if(appliedOffer){
+                    if(appliedOffer.promotype === "USER"){
+                        // only can apply once per user
+                    }else{
+                        if(appliedOffer.isActive){
+                            return res.status(200).json({message:"Offer verified",offer:appliedOffer});
+                        }
+                    }
+                }
+             }
+             return res.status(400).json({message:"Offer is not valid."});
+}
+

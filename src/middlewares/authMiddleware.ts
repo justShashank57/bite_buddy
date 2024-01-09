@@ -9,7 +9,7 @@ export const requireAuth = (req:Request,res:Response,next:NextFunction) =>{
           jwt.verify(token,AUTH_SECRET, async (err:any,decodedToken:any)=>{
                  if(err){
                      console.log(err.message);
-                     return res.redirect('/login');
+                     return res.status(400).json(err.message);
                  }
                  else{
                      req.user = decodedToken;
@@ -19,7 +19,7 @@ export const requireAuth = (req:Request,res:Response,next:NextFunction) =>{
           })
        }
        else{
-           return res.redirect('/login');
+           return res.status(400).json({message:"Session Expired."});
        }
 }
 

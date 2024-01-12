@@ -1,5 +1,5 @@
 import express, { Application } from "express";
-import { AdminRoute,VendorRoute, customerRoute, shoppingRoute } from "../routes";
+import { AdminRoute,VendorRoute, customerRoute, deliveryRoute, shoppingRoute } from "../routes";
 import cookieParser from "cookie-parser";
 import { checkUserExistence } from "../middlewares";
 import path from 'path';
@@ -16,6 +16,7 @@ export default async (app:Application) => {
     app.use('/vendor',VendorRoute);
     app.use(shoppingRoute);
     app.use('/customer',customerRoute);
+    app.use('/delivery',deliveryRoute);
     return app;
 }
 

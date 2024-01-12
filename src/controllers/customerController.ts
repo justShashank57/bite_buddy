@@ -1,10 +1,10 @@
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import express,{Request,Response,NextFunction} from 'express';
+import {Request,Response,NextFunction} from 'express';
 import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs, orderInputs, cartItem } from '../DTO';
 import { generateOtp, generatePassword, generateSalt, generateSignature, onRequestOtp, validatePassword } from '../utility';
 import { customer } from '../model/customer';
-import { Transaction, food } from '../model';
+import { Transaction, food, vendor } from '../model';
 import { Order } from '../model/order';
 import { Offer } from '../model/offer';
 
@@ -163,9 +163,10 @@ export const editCustomerProfile = async (req:Request,res:Response,next:NextFunc
               profile.lastName = lastName;
               profile.address = address;
               const result = await profile.save();
-              return res.status(200).json(profile);
+              return res.status(200).json(result);
            }
        }
+       return res.status(400).json({message:"Error while editing Profile."})
 }
 // cart
 export const addToCart= async(req:Request,res:Response,next:NextFunction) =>{
@@ -235,6 +236,24 @@ export const deleteCart= async(req:Request,res:Response,next:NextFunction) =>{
       }
     }
     return res.status(400).json({message:"Cart is empty."});
+}
+// --------------------------- Delivery Notification------------------------
+export const assignOrderForDelivery = async (orderId:string,vendorId:string)=>{
+
+    // Find the vendor
+    const Vendor = await vendor.findById(vendorId);
+    if(Vendor){
+        const areaCode = Vendor.pincode;
+        const lat = Vendor.lat;
+        const lng = Vendor.lng;
+        // Find the Available Delivery Person
+    }
+
+
+    // Check the nearest delivery person and assign the order
+
+    // update DeliveryId
+
 }
 
 // -------------------------create payment--------------------
@@ -338,7 +357,9 @@ export const createOrder = async (req:Request,res:Response,next:NextFunction)=>{
                     currentTransaction.orderId = orderId;
                     currentTransaction.status = 'CONFIRMED';
 
-                    await currentTransaction.save()
+                    await currentTransaction.save();
+
+                    assignOrderForDelivery(currentOrder._id,vendorId);
 
                     await profile.save();
                     return res.status(200).json(currentOrder);

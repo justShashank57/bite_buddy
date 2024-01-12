@@ -1,5 +1,5 @@
-import express,{Request,Response,NextFunction} from 'express';
-import { food, foodDoc, vendor } from '../model';
+import {Request,Response,NextFunction} from 'express';
+import {foodDoc, vendor } from '../model';
 import { Offer } from '../model/offer';
 
 export const getFoodAvailability = async (req:Request,res:Response,next:NextFunction) =>{

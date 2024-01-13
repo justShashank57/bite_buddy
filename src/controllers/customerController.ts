@@ -4,7 +4,7 @@ import {Request,Response,NextFunction} from 'express';
 import { createCustomerInputs, customerPayload, userLoginInputs,editCustomerProfileInputs, orderInputs, cartItem } from '../DTO';
 import { generateOtp, generatePassword, generateSalt, generateSignature, onRequestOtp, validatePassword } from '../utility';
 import { customer } from '../model/customer';
-import { Transaction, food, vendor } from '../model';
+import { DeliveryUser, Transaction, food, vendor } from '../model';
 import { Order } from '../model/order';
 import { Offer } from '../model/offer';
 
@@ -247,6 +247,24 @@ export const assignOrderForDelivery = async (orderId:string,vendorId:string)=>{
         const lat = Vendor.lat;
         const lng = Vendor.lng;
         // Find the Available Delivery Person
+        const deliveryPerson = await DeliveryUser.find({pincode:areaCode,verified:true,isAvailable:true});
+        if(deliveryPerson){
+            // check the most nearest and assign the order
+            //    use google map API
+
+            const currentOrder = await Order.findById(orderId);
+            if(currentOrder){
+                // update delivery id
+
+                currentOrder.deliveryId = deliveryPerson[0]._id.toString();
+                const response = await currentOrder.save();
+
+                console.log(response);
+
+                // notify the vendor for newly recieved order using firebase push Notification
+
+            }
+        }
     }
 
 

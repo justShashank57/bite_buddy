@@ -25,6 +25,7 @@ export const deliveryUserSignup = async (req:Request,res:Response,next:NextFunct
              password:userPassword,
              salt:salt,
              phone:phone,
+             pincode:pincode,
              verified:false,
              firstName:firstName,
              lastName:lastName,

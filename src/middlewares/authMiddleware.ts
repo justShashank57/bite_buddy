@@ -2,11 +2,11 @@ import jwt from 'jsonwebtoken';
 import {Request,Response,NextFunction} from 'express'
 import { AUTH_SECRET } from '../config';
 
-export const requireAuth = (req:Request,res:Response,next:NextFunction) =>{
+export const requireAuth = async (req:Request,res:Response,next:NextFunction) =>{
        const token = req.cookies.jwt;
        if(token){
         //   the callback in verify gives error if token is fake and gives decoded payload if its original
-          jwt.verify(token,AUTH_SECRET, async (err:any,decodedToken:any)=>{
+          await jwt.verify(token,AUTH_SECRET, async (err:any,decodedToken:any)=>{
                  if(err){
                      console.log(err.message);
                      return res.status(400).json(err.message);
